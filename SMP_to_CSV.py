@@ -1,6 +1,6 @@
 try:
     import os
-    import sys 
+    import sys
     # hacky bandaid
     sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
     import struct
@@ -8,7 +8,7 @@ try:
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
-    plt.ioff() # stop displaying quicklook plots by default
+    #plt.ioff() # stop displaying quicklook plots by default
     from tools_ext import detect_peaks # reason for hacky bandaid
     from scipy import signal 
 except ImportError as err:
@@ -57,6 +57,23 @@ class SMP(object):
         Give the user the option to replace them with 0s or interpolate from the nearest non-zero values'''
         #TODO: Replace with try catch to bombproof
         #TODO: Check if its a very short run / air shot
+                
+        sWindows =int(np.round(1/p.header['Samples Dist [mm]']))
+        smoothedForce = moving_average(p.data[:,1], sWindows)
+        smoothDiff = np.diff(smoothedForce)
+        smoothDiff = np.insert(smoothDiff, 0, np.nan)
+        perChange = abs(smoothDiff)/smoothedForce
+        
+        plt.plot(p.subset[:,1])
+        temp = signal.detrend(p.subset[:,1])
+        plt.plot(temp)
+        
+        c1 = p.subset[:,1].mean()
+        c2 = p.subset[:,1].var()  # var is population var by default with np
+        A = signal.detrend(p.subset[:,1] - c1)
+        plt.plot(A)
+
+        
         if any(self.data[:,1] < 0):
             zCor = int(input("Negative force values detected. Replace with 0s (1), interpolate (2): "))
             self.subset = self.data.copy()
